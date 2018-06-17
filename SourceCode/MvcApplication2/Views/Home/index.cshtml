@@ -1,0 +1,166 @@
+﻿@model MvcApplication2.Models.Person
+@{
+    ViewBag.Title = "index";
+            //Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link rel="stylesheet" href="//code.jquery.com/ui/1.11.2/themes/smoothness/jquery-ui.css">
+<script src="//code.jquery.com/jquery-1.10.2.js"></script>
+<script src="//code.jquery.com/ui/1.11.2/jquery-ui.js"></script>
+<h2>
+</h2>
+<table style="width: 50%">
+    <tr>
+        <td colspan="3" style="color: Red">
+            <div id="msgForPrimium">
+               <span></span>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            Name
+        </td>
+        <td>@Html.TextBoxFor(model => model.personName, new { id = "name" })
+        </td>
+        <td>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            Birth Date
+        </td>
+        <td>@Html.TextBoxFor(model => model.birthDate, new { id = "birthdate" })
+        </td>
+        <td>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            Gender
+        </td>
+        <td>
+            @Html.DropDownListFor(model => model.personGender, new SelectList(Model.lstGender, "ID", "Name"), "- Please Select Gender -", new { id = "lstgender" })
+        </td>
+        <td>
+        </td>
+    </tr>
+    <tr>
+        <td>
+        </td>
+        <td>
+            <input id="btncalculatePremium" type="submit" name="Calculate Premium" value="Calculate Premium" />
+        </td>
+        <td>
+        </td>
+    </tr>
+</table>
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('#msgForPrimium span').text('');
+
+        $("#birthdate").datepicker({ dateFormat: "dd/mm/yy",
+            onSelect: function (dateText, inst) {
+            }
+        });
+
+        $('#btncalculatePremium').click(function (e) {
+            e.preventDefault(); // <------------------ stop default behaviour of button
+            var element = this;
+            if (Isvalid())  // Validate input
+            {
+                var personAage = CalAge();
+                var gendorType = $('#lstgender').val();
+                $.ajax({
+                    url: "/Home/Calculate",
+                    type: "POST",
+                    data: JSON.stringify({ gender: gendorType, age: personAage }),
+                    dataType: "json",
+                    traditional: true,
+                    contentType: "application/json; charset=utf-8",
+                    success: function (data) {
+                        if (data.ErrorMessage == "Success") {
+                            var msg = "Person will get " + data.Primium + " Primium";
+                            $('#msgForPrimium span').text(msg);                            
+                        } else {
+                            $('#msgForPrimium span').text(ErrorMessage);
+                            alert("Error occurs on the Database level!");
+                        }
+                    },
+                    error: function () {
+                        $('#msgForPrimium span').text(ErrorMessage);
+                        alert("An error has occured!!!");
+                    }
+                });
+            }
+        });
+
+        function Isvalid() {
+
+            if ($('#name').val().trim() == "") {
+                alert("Please enter name.");
+                $('#name').focus();
+                return false;
+            }
+
+            if ($('#birthdate').val().trim() == "") {
+                alert("Please enter birthdate.");
+                $('#birthdate').focus();
+                return false;
+            }
+
+            if ($('#birthdate').val().trim() != "") {
+                if (!isDate($('#birthdate').val().trim())) {
+                    alert("Invalid birthdate.");
+                    $('#birthdate').focus();
+                    return false;
+                }
+            }
+
+            if ($('#lstgender').val() <= 0) {
+                alert("Please select gender type.");
+                $('#lstgender').focus();
+                return false;
+
+            }
+            return true;
+
+        }
+
+        function CalAge() {
+            var from = $("#birthdate").val().split("/");
+            var dob = new Date(from[2], from[1] - 1, from[0])
+            var today = new Date();
+            var age = Math.floor((today - dob) / (365.25 * 24 * 60 * 60 * 1000));
+            return age;
+        }
+        function isDate(txtDate) {
+            var currVal = txtDate;
+            if (currVal == '')
+                return false;
+            var rxDatePattern = /^(\d{1,2})(\/|-)(\d{1,2})(\/|-)(\d{4})$/; //Declare Regex
+            var dtArray = currVal.match(rxDatePattern); // is format OK?
+
+            if (dtArray == null)
+                return false;
+
+            //Checks for dd/mm/yyyy format.
+            dtDay = dtArray[1];
+            dtMonth = dtArray[3];
+            dtYear = dtArray[5];
+
+            if (dtMonth < 1 || dtMonth > 12)
+                return false;
+            else if (dtDay < 1 || dtDay > 31)
+                return false;
+            else if ((dtMonth == 4 || dtMonth == 6 || dtMonth == 9 || dtMonth == 11) && dtDay == 31)
+                return false;
+            else if (dtMonth == 2) {
+                var isleap = (dtYear % 4 == 0 && (dtYear % 100 != 0 || dtYear % 400 == 0));
+                if (dtDay > 29 || (dtDay == 29 && !isleap))
+                    return false;
+            }
+            return true;
+        }
+
+    });
+</script>
